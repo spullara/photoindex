@@ -8,10 +8,17 @@ import torch
 from PIL import Image
 from pillow_heif import register_heif_opener
 
+
+device = torch.device("cpu")
+if torch.cuda.is_available():
+    device = torch.device("cuda")
+if torch.has_mps:
+    device = torch.device("mps")
+
 @st.cache_resource
 def load_model():
     register_heif_opener()
-    model, _, preprocess = open_clip.create_model_and_transforms('hf-hub:laion/CLIP-ViT-g-14-laion2B-s12B-b42K')
+    model, _, preprocess = open_clip.create_model_and_transforms('hf-hub:laion/CLIP-ViT-g-14-laion2B-s12B-b42K', device=device)
     tokenizer = open_clip.get_tokenizer('hf-hub:laion/CLIP-ViT-g-14-laion2B-s12B-b42K')
     index = faiss.read_index("knn.index", faiss.IO_FLAG_MMAP | faiss.IO_FLAG_READ_ONLY)
     # load the embeddings.json file
@@ -22,7 +29,7 @@ def load_model():
 
 def get_embedding(text):
     with torch.no_grad(), torch.cuda.amp.autocast():
-        return model.encode_text(tokenizer(text))
+        return model.encode_text(tokenizer(text).to(device))
 
 
 def search(query):

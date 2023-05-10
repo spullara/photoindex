@@ -11,14 +11,20 @@ from pillow_heif import register_heif_opener
 
 register_heif_opener()
 
-model, _, preprocess = open_clip.create_model_and_transforms('hf-hub:laion/CLIP-ViT-g-14-laion2B-s12B-b42K')
+device = torch.device("cpu")
+if torch.cuda.is_available():
+    device = torch.device("cuda")
+if torch.has_mps:
+    device = torch.device("mps")
+
+model, _, preprocess = open_clip.create_model_and_transforms('hf-hub:laion/CLIP-ViT-g-14-laion2B-s12B-b42K', device=device)
 tokenizer = open_clip.get_tokenizer('hf-hub:laion/CLIP-ViT-g-14-laion2B-s12B-b42K')
 
 
 def get_embedding(image: Image):
     # Your function to get the embedding of an image
     with torch.no_grad(), torch.cuda.amp.autocast():
-        image = preprocess(image).unsqueeze(0)
+        image = preprocess(image).unsqueeze(0).to(device)
         return model.encode_image(image)
 
 
@@ -43,6 +49,8 @@ def custom_converter(obj):
     if isinstance(obj, tuple):
         return list(obj)
     if isinstance(obj, TiffImagePlugin.IFDRational):
+        if obj._denominator == 0:
+            return 0
         return obj._numerator / obj._denominator
     if isinstance(obj, bytes):
         try:
