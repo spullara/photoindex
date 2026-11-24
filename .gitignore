@@ -1,0 +1,13 @@
+
+# local env, venv, and large generated data
+.env
+.idea/
+__pycache__/
+bin/
+lib/
+share/
+etc/
+pyvenv.cfg
+image_embeddings.json
+index_infos.json
+knn.index
